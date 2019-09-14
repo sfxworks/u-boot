@@ -6,7 +6,7 @@ trigger:
       - azure-pipelines
   tags:
     include:
-      - v*-ci
+      - azure-pipeline-*
 
 pool:
   vmImage: 'ubuntu-latest'
