@@ -32,7 +32,7 @@ steps:
 - task: GithubRelease@0
   displayName: 'Create Github release with assets'
   inputs:
-    gitHubConnection: sigmaris
+    gitHubConnection: sigmaris_token
     repositoryName: sigmaris/u-boot
     action: 'create'
     target: '$(Build.SourceVersion)'
