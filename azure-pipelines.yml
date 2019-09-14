@@ -1,0 +1,33 @@
+trigger:
+  batch: false
+  branches:
+    include:
+      - master
+      - azure-pipelines
+  tags:
+    include:
+      - v*-ci
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- script: |
+    apt update
+    apt install -y build-essential device-tree-compiler gcc-aarch64-linux-gnu
+  displayName: 'Install packages'
+- script: |
+    git clone https://github.com/ARM-software/arm-trusted-firmware.git
+    cd arm-trusted-firmware
+    git checkout v2.1
+    make realclean
+    make -j$(getconf _NPROCESSORS_ONLN) CROSS_COMPILE=aarch64-linux-gnu- PLAT=rk3399 bl31
+  displayName: Build arm-trusted-firmware bl31.elf for rk3399
+- script: |
+    export BL31="$(realpath arm-trusted-firmware/build/rk3399/release/bl31/bl31.elf)"
+    make rockpro64-rk3399_defconfig
+    make -j$(getconf _NPROCESSORS_ONLN) CROSS_COMPILE=aarch64-linux-gnu-
+    tools/mkimage -n rk3399 -T rksd -d tpl/u-boot-tpl-dtb.bin '$(Build.ArtifactStagingDirectory)/idbloader.img'
+    cat spl/u-boot-spl-dtb.bin >> '$(Build.ArtifactStagingDirectory)/idbloader.img'
+    cp u-boot.itb '$(Build.ArtifactStagingDirectory)'
+  displayName: Build idbloader.img and u-boot.itb
