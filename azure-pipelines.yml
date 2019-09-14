@@ -13,8 +13,8 @@ pool:
 
 steps:
 - script: |
-    apt update
-    apt install -y build-essential device-tree-compiler gcc-aarch64-linux-gnu
+    sudo apt update
+    sudo apt install -y build-essential device-tree-compiler gcc-aarch64-linux-gnu
   displayName: 'Install packages'
 - script: |
     git clone https://github.com/ARM-software/arm-trusted-firmware.git
