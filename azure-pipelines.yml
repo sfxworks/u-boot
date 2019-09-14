@@ -29,3 +29,13 @@ steps:
     cat spl/u-boot-spl-dtb.bin >> '$(Build.ArtifactStagingDirectory)/idbloader.img'
     cp u-boot.itb '$(Build.ArtifactStagingDirectory)'
   displayName: Build idbloader.img and u-boot.itb
+- task: GithubRelease@0
+  displayName: 'Create Github release with assets'
+  inputs:
+    gitHubConnection: sigmaris
+    repositoryName: sigmaris/u-boot
+    action: 'create'
+    target: '$(Build.SourceVersion)'
+    tagSource: 'auto'
+    title: 'rockpro64 u-boot $(Build.SourceBranchName)'
+    assets: '$(Build.ArtifactStagingDirectory)/*'
