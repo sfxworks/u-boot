@@ -11,6 +11,7 @@
 #include <asm/io.h>
 #include <asm/arch-rockchip/bootrom.h>
 #include <asm/arch-rockchip/clock.h>
+#include <asm/arch-rockchip/cru_rk3399.h>
 #include <asm/arch-rockchip/gpio.h>
 #include <asm/arch-rockchip/grf_rk3399.h>
 #include <asm/arch-rockchip/hardware.h>
@@ -213,7 +214,7 @@ void spl_perform_fixups(struct spl_image_info *spl_image)
 			   "u-boot,spl-boot-device", boot_ofpath);
 }
 
-#if defined(SPL_GPIO_SUPPORT)
+#if defined(CONFIG_SPL_GPIO_SUPPORT)
 static void rk3399_force_power_on_reset(void)
 {
 	ofnode node;
@@ -239,7 +240,7 @@ static void rk3399_force_power_on_reset(void)
 
 void spl_board_init(void)
 {
-#if defined(SPL_GPIO_SUPPORT)
+#if defined(CONFIG_SPL_GPIO_SUPPORT)
 	struct rk3399_cru *cru = rockchip_get_cru();
 
 	/*
