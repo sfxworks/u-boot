@@ -19,8 +19,11 @@ steps:
     git config --global user.email 'noemail@example.com'
     git clone https://github.com/ARM-software/arm-trusted-firmware.git
     cd arm-trusted-firmware
-    git checkout v2.1
+    git checkout master
+    git remote add anarsoul https://github.com/anarsoul/arm-trusted-firmware.git
+    git fetch anarsoul
     git am ../atf-rk3399-baudrate.patch
+    git cherry-pick f4707a3c40bfc752a24c427263f7cbe8d7adfcd6
     make realclean
     make -j$(getconf _NPROCESSORS_ONLN) CROSS_COMPILE=aarch64-linux-gnu- PLAT=rk3399 bl31
   displayName: Build arm-trusted-firmware bl31.elf for rk3399 with 1.5Mbps baudrate patch
