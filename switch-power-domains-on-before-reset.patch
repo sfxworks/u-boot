@@ -1,3 +1,10 @@
+From: Piotr Szczepanik <piter75@gmail.com>
+Date: Sun, 24 Nov 2019 22:07:46 +0100
+Subject: [PATCH] Multiple bootloader creation options for rk3399 (#1614)
+
+* Fixed reset in mainline ATF
+
+---
 diff --git a/plat/rockchip/rk3399/drivers/pmu/pmu.c b/plat/rockchip/rk3399/drivers/pmu/pmu.c
 index 42589b9..8f2a419 100644
 --- a/plat/rockchip/rk3399/drivers/pmu/pmu.c
