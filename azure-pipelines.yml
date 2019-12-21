@@ -14,7 +14,7 @@ jobs:
     vmImage: 'ubuntu-18.04'
   container: sigmaris/aarch64-linux-crossbuilder:latest
   steps:
-  - checkout: none #skip checking out the default repository resource
+  - checkout: none  #skip checking out the default repository resource
   - script: |
       git config --global user.name 'Build Robot'
       git config --global user.email 'noemail@example.com'
@@ -23,7 +23,7 @@ jobs:
       git checkout master
       make realclean
       make -j$(getconf _NPROCESSORS_ONLN) CROSS_COMPILE=aarch64-linux-gnu- PLAT=rk3399 bl31
-      cp arm-trusted-firmware/build/rk3399/release/bl31/bl31.elf '$(Build.ArtifactStagingDirectory)'
+      cp build/rk3399/release/bl31/bl31.elf '$(Build.ArtifactStagingDirectory)'
     displayName: Build arm-trusted-firmware bl31.elf for rk3399
   - task: PublishBuildArtifacts@1
     inputs:
@@ -57,8 +57,7 @@ jobs:
       artifactName: atf
       downloadPath: '$(System.DefaultWorkingDirectory)'
   - script: |
-      ls -l '$(System.DefaultWorkingDirectory)'
-      export BL31="$(realpath $(System.DefaultWorkingDirectory)/bl31.elf)"
+      export BL31="$(realpath $(System.DefaultWorkingDirectory)/atf/bl31.elf)"
       make mrproper
       make $(defconfig)
       make -j$(getconf _NPROCESSORS_ONLN) CROSS_COMPILE=aarch64-linux-gnu-
@@ -66,13 +65,42 @@ jobs:
       cp $(img1name) '$(Build.ArtifactStagingDirectory)'
       cp u-boot.itb '$(Build.ArtifactStagingDirectory)/$(img2name)'
     displayName: Build u-boot
+  - script: |
+      padsize=393215
+      img1size=$(wc -c <"$(img1name)")
+      [ $img1size -le $padsize ] || exit 1
+      dd if=/dev/zero of=$(img1name) conv=notrunc bs=1 count=1 seek=$padsize
+      cat $(img1name) u-boot.itb > '$(Build.ArtifactStagingDirectory)/spi_combined.img'
+    displayName: Create single SPI image with u-boot.itb at 0x60000 (393216)
+    condition: eq(variables['img1type'], 'rkspi')
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Build Artifacts'
     inputs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: '$(artifact)'
+- job: github_release
+  dependsOn:
+  - build_uboot
+  condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'), endsWith(variables['Build.SourceBranch'], '-ci'))
+  pool:
+    vmImage: 'ubuntu-18.04'
+  container: sigmaris/aarch64-linux-crossbuilder:latest
+  steps:
+  - checkout: none  #skip checking out the default repository resource
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download mmc_u-boot artifacts'
+    inputs:
+      artifactName: mmc_u-boot
+      downloadPath: '$(System.DefaultWorkingDirectory)'
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download spi_u-boot artifacts'
+    inputs:
+      artifactName: spi_u-boot
+      downloadPath: '$(System.DefaultWorkingDirectory)'
+  - script: |
+      cp $(System.DefaultWorkingDirectory)/mmc_u-boot/* $(System.DefaultWorkingDirectory)/spi_u-boot/* '$(Build.ArtifactStagingDirectory)'
+    displayName: Copy build artifacts to staging directory
   - task: GithubRelease@0
-    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'), endsWith(variables['Build.SourceBranch'], '-ci'))
     displayName: 'Create Github release with assets'
     inputs:
       gitHubConnection: sigmaris_token
