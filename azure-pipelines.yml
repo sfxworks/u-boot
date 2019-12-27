@@ -8,39 +8,105 @@ trigger:
     include:
       - v*-ci
 
-pool:
-  vmImage: 'ubuntu-latest'
-
-container: sigmaris/aarch64-linux-crossbuilder:latest
-
-steps:
-- script: |
-    git config --global user.name 'Build Robot'
-    git config --global user.email 'noemail@example.com'
-    git clone https://github.com/ARM-software/arm-trusted-firmware.git
-    cd arm-trusted-firmware
-    git checkout master
-    make realclean
-    make -j$(getconf _NPROCESSORS_ONLN) CROSS_COMPILE=aarch64-linux-gnu- PLAT=rk3399 bl31
-  displayName: Build arm-trusted-firmware bl31.elf for rk3399
-- script: |
-    export BL31="$(realpath arm-trusted-firmware/build/rk3399/release/bl31/bl31.elf)"
-    make rockpro64-rk3399_defconfig
-    make -j$(getconf _NPROCESSORS_ONLN) CROSS_COMPILE=aarch64-linux-gnu-
-    cp idbloader.img u-boot.itb '$(Build.ArtifactStagingDirectory)'
-  displayName: Build idbloader.img and u-boot.itb
-- task: PublishBuildArtifacts@1
-  inputs:
-    pathToPublish: '$(Build.ArtifactStagingDirectory)'
-    artifactName: uboot
-- task: GithubRelease@0
+jobs:
+- job: build_atf
+  pool:
+    vmImage: 'ubuntu-18.04'
+  container: sigmaris/aarch64-linux-crossbuilder:latest
+  steps:
+  - checkout: none  #skip checking out the default repository resource
+  - script: |
+      git config --global user.name 'Build Robot'
+      git config --global user.email 'noemail@example.com'
+      git clone https://github.com/ARM-software/arm-trusted-firmware.git
+      cd arm-trusted-firmware
+      git checkout master
+      make realclean
+      make -j$(getconf _NPROCESSORS_ONLN) CROSS_COMPILE=aarch64-linux-gnu- PLAT=rk3399 bl31
+      cp build/rk3399/release/bl31/bl31.elf '$(Build.ArtifactStagingDirectory)'
+    displayName: Build arm-trusted-firmware bl31.elf for rk3399
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)/bl31.elf'
+      artifactName: atf
+- job: build_uboot
+  dependsOn: build_atf
+  condition: succeeded()
+  pool:
+    vmImage: 'ubuntu-18.04'
+  container: sigmaris/aarch64-linux-crossbuilder:latest
+  strategy:
+    maxParallel: 2
+    matrix:
+      spi:
+        defconfig: rockpro64-rk3399-spi_defconfig
+        img1type: rkspi
+        img1name: spi_idbloader.img
+        img2name: spi_u-boot.itb
+        artifact: spi_u-boot
+      mmc:
+        defconfig: rockpro64-rk3399_defconfig
+        img1type: rksd
+        img1name: mmc_idbloader.img
+        img2name: mmc_u-boot.itb
+        artifact: mmc_u-boot
+  steps:
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download Build Artifacts'
+    inputs:
+      artifactName: atf
+      downloadPath: '$(System.DefaultWorkingDirectory)'
+  - script: |
+      export BL31="$(realpath $(System.DefaultWorkingDirectory)/atf/bl31.elf)"
+      make mrproper
+      make $(defconfig)
+      make -j$(getconf _NPROCESSORS_ONLN) CROSS_COMPILE=aarch64-linux-gnu-
+      tools/mkimage -n rk3399 -T $(img1type) -d tpl/u-boot-tpl.bin:spl/u-boot-spl.bin $(img1name)
+      cp $(img1name) '$(Build.ArtifactStagingDirectory)'
+      cp u-boot.itb '$(Build.ArtifactStagingDirectory)/$(img2name)'
+    displayName: Build u-boot
+  - script: |
+      padsize=393215
+      img1size=$(wc -c <"$(img1name)")
+      [ $img1size -le $padsize ] || exit 1
+      dd if=/dev/zero of=$(img1name) conv=notrunc bs=1 count=1 seek=$padsize
+      cat $(img1name) u-boot.itb > '$(Build.ArtifactStagingDirectory)/spi_combined.img'
+    displayName: Create single SPI image with u-boot.itb at 0x60000 (393216)
+    condition: eq(variables['img1type'], 'rkspi')
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Build Artifacts'
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: '$(artifact)'
+- job: github_release
+  dependsOn:
+  - build_uboot
   condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'), endsWith(variables['Build.SourceBranch'], '-ci'))
-  displayName: 'Create Github release with assets'
-  inputs:
-    gitHubConnection: sigmaris_token
-    repositoryName: sigmaris/u-boot
-    action: 'create'
-    target: '$(Build.SourceVersion)'
-    tagSource: 'auto'
-    title: 'rockpro64 u-boot $(Build.SourceBranchName)'
-    assets: '$(Build.ArtifactStagingDirectory)/*'
+  pool:
+    vmImage: 'ubuntu-18.04'
+  container: sigmaris/aarch64-linux-crossbuilder:latest
+  steps:
+  - checkout: none  #skip checking out the default repository resource
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download mmc_u-boot artifacts'
+    inputs:
+      artifactName: mmc_u-boot
+      downloadPath: '$(System.DefaultWorkingDirectory)'
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download spi_u-boot artifacts'
+    inputs:
+      artifactName: spi_u-boot
+      downloadPath: '$(System.DefaultWorkingDirectory)'
+  - script: |
+      cp $(System.DefaultWorkingDirectory)/mmc_u-boot/* $(System.DefaultWorkingDirectory)/spi_u-boot/* '$(Build.ArtifactStagingDirectory)'
+    displayName: Copy build artifacts to staging directory
+  - task: GithubRelease@0
+    displayName: 'Create Github release with assets'
+    inputs:
+      gitHubConnection: sigmaris_token
+      repositoryName: sigmaris/u-boot
+      action: 'create'
+      target: '$(Build.SourceVersion)'
+      tagSource: 'auto'
+      title: 'rockpro64 u-boot $(Build.SourceBranchName)'
+      assets: '$(Build.ArtifactStagingDirectory)/*'
