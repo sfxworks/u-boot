@@ -14,7 +14,6 @@ jobs:
     vmImage: 'ubuntu-18.04'
   container: sigmaris/aarch64-linux-crossbuilder:latest
   steps:
-  - checkout: none  #skip checking out the default repository resource
   - script: |
       set -e
       git config --global user.name 'Build Robot'
@@ -22,10 +21,11 @@ jobs:
       git clone https://github.com/ARM-software/arm-trusted-firmware.git
       cd arm-trusted-firmware
       git checkout master
+      git am ../atf-rk3399-baudrate.patch
       make realclean
       make -j$(getconf _NPROCESSORS_ONLN) CROSS_COMPILE=aarch64-linux-gnu- PLAT=rk3399 bl31
       cp build/rk3399/release/bl31/bl31.elf '$(Build.ArtifactStagingDirectory)'
-    displayName: Build arm-trusted-firmware bl31.elf for rk3399
+    displayName: Build arm-trusted-firmware bl31.elf for rk3399 with 1.5Mbps baudrate patch
   - task: PublishBuildArtifacts@1
     displayName: 'Publish arm-trusted-firmware bl31.elf'
     inputs:
