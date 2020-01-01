@@ -773,7 +773,7 @@ int pci_bind_bus_devices(struct udevice *bus)
 	     bdf += PCI_BDF(0, 0, 1)) {
 		struct pci_child_platdata *pplat;
 		struct udevice *dev;
-		ulong class;
+		ulong class = 0;
 
 		if (!PCI_FUNC(bdf))
 			found_multi = false;
