@@ -787,7 +787,7 @@ static int rockchip_pcie_init_port(struct pcie_rockchip *rockchip)
 	if (!fixed_resource) {
 		dm_gpio_set_value(&rockchip->rst_gpio, 1);
 	} else {
-		#ifdef CONFIG_RKCHIP_RK3399
+		#ifdef CONFIG_ROCKCHIP_RK3399
 		/* GPIO4 D3 output high level */
 		debug("pcie_cdns: warning: double check your reset io\n");
 		reg = readl(0xff790000);
@@ -1028,7 +1028,7 @@ static int pcie_rockchip_ofdata_to_platdata(struct udevice *dev)
 	}
 do_fixed:
 	if(fixed_resource) {
-	#ifdef CONFIG_RKCHIP_RK3399
+	#ifdef CONFIG_ROCKCHIP_RK3399
 		rockchip->axi_base = 0xf8000000;
 		rockchip->apb_base = 0xfd000000;
 		rockchip->axi_size = 0x2000000;
@@ -1043,7 +1043,7 @@ do_fixed:
 	}
 
 	if(fixed_resource) {
-		#ifdef CONFIG_RKCHIP_RK3399
+		#ifdef CONFIG_ROCKCHIP_RK3399
 
 		rockchip->phy.reg_base = RKIO_GRF_PHYS;
 		rockchip->phy.rst_addr = RKIO_CRU_PHYS + 0x420;
@@ -1092,7 +1092,7 @@ do_fixed:
 	return 0;
 
 fixed_rst:
-	#ifdef CONFIG_RKCHIP_RK3399
+	#ifdef CONFIG_ROCKCHIP_RK3399
 	/* set GPIO4 D3 as output low now*/
 	debug("pcie: warning: double check your PCIe reset gpio!\n");
 	writel((0x3 << 30) | (0x0 << 14), RKIO_GRF_PHYS + 0xe010);
