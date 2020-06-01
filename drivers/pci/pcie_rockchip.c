@@ -296,6 +296,14 @@ static int rockchip_pcie_init_port(struct udevice *dev)
 		goto err_power_off_phy;
 	}
 
+	/*
+	 * XXX: On at least the RockPro64, many cards will trip a
+	 * synchronous abort when first accessing PCIe config space
+	 * during bus scanning. A delay after link training allows
+	 * some of these cards to function.
+	 */
+	mdelay(2000);
+
 	/* Initialize Root Complex registers. */
 	writel(PCIE_LM_VENDOR_ROCKCHIP, priv->apb_base + PCIE_LM_VENDOR_ID);
 	writel(PCI_CLASS_BRIDGE_PCI << 16,
