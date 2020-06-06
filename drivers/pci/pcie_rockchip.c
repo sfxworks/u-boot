@@ -277,6 +277,14 @@ static int rockchip_pcie_init_port(struct udevice *dev)
 	writel(PCIE_CLIENT_LINK_TRAIN_ENABLE,
 	       priv->apb_base + PCIE_CLIENT_CONFIG);
 
+	/*
+	 * According to PCI Express Card Electromechanical Specification
+	 * Revision 3.0, Table 2-4, power stable and reference clk stable
+	 * before PERST# inactive should be at least 100ms and 100us
+	 * respectively. Otherwise we do see some failures for link training.
+	 */
+	mdelay(100);
+
 	if (dm_gpio_is_valid(&priv->ep_gpio))
 		dm_gpio_set_value(&priv->ep_gpio, 1);
 
