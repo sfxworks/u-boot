@@ -20,7 +20,7 @@ jobs:
       git config --global user.email 'noemail@example.com'
       git clone https://github.com/ARM-software/arm-trusted-firmware.git
       cd arm-trusted-firmware
-      git checkout 86ed8953b5233570c49a58060d424b7863d3a396
+      git checkout v2.3
       git am ../atf-rk3399-baudrate.patch
       make realclean
       make -j$(getconf _NPROCESSORS_ONLN) CROSS_COMPILE=aarch64-linux-gnu- PLAT=rk3399 bl31
@@ -41,14 +41,12 @@ jobs:
     maxParallel: 2
     matrix:
       spi:
-        defconfig: rockpro64-rk3399-spi_defconfig
         img1type: rkspi
         img1name: spi_idbloader.img
         img2name: spi_u-boot.itb
         envname: spi_default_env.img
         artifact: spi_u-boot
       mmc:
-        defconfig: rockpro64-rk3399_defconfig
         img1type: rksd
         img1name: mmc_idbloader.img
         img2name: mmc_u-boot.itb
@@ -66,7 +64,7 @@ jobs:
 
       # Configure U-Boot
       make mrproper
-      make $(defconfig)
+      make rockpro64-rk3399_defconfig
 
       # Build U-Boot
       make -j$(getconf _NPROCESSORS_ONLN) CROSS_COMPILE=aarch64-linux-gnu-
