@@ -124,6 +124,10 @@
 	u-boot,spl-fifo-mode;
 };
 
+&spi0 {
+	u-boot,dm-pre-reloc;
+};
+
 &spi1 {
 	u-boot,dm-pre-reloc;
 };
