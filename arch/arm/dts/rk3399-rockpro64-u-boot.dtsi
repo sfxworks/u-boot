@@ -7,6 +7,7 @@
 #include "rk3399-sdram-lpddr4-100.dtsi"
 / {
 	aliases {
+		/delete-property/ spi1;
 		spi0 = &spi1;
 	};
 
