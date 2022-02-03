@@ -5,6 +5,7 @@
 
 #ifndef __ROCKPRO64_RK3399_H
 #define __ROCKPRO64_RK3399_H
+#define CONFIG_BOOTP_SERVERIP
 
 #define ROCKCHIP_DEVICE_SETTINGS \
 	"stdin=serial,usbkbd\0" \
