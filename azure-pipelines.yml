@@ -12,7 +12,7 @@ jobs:
 - job: build_atf
   pool:
     vmImage: 'ubuntu-18.04'
-  container: registry.mcsh.red/library/aarch64-linux-crossbuilder@sha256:07f8de01b974a22414c779bea2d33dcd69b2c371e0a8b81b98bc17484252b9cc
+  container: sigmaris/aarch64-linux-crossbuilder:latest
   steps:
   - checkout: none  #skip checking out the default repository resource
   - script: |
@@ -33,7 +33,7 @@ jobs:
   condition: succeeded()
   pool:
     vmImage: 'ubuntu-18.04'
-  container: registry.mcsh.red/library/aarch64-linux-crossbuilder@sha256:07f8de01b974a22414c779bea2d33dcd69b2c371e0a8b81b98bc17484252b9cc
+  container: sigmaris/aarch64-linux-crossbuilder:latest
   strategy:
     maxParallel: 2
     matrix:
@@ -106,7 +106,7 @@ jobs:
   condition: succeeded()
   pool:
     vmImage: 'ubuntu-18.04'
-  container: registry.mcsh.red/library/aarch64-linux-crossbuilder@sha256:07f8de01b974a22414c779bea2d33dcd69b2c371e0a8b81b98bc17484252b9cc
+  container: sigmaris/aarch64-linux-crossbuilder:latest
   strategy:
     maxParallel: 2
     matrix:
@@ -156,7 +156,7 @@ jobs:
   condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'), endsWith(variables['Build.SourceBranch'], '-ci'))
   pool:
     vmImage: 'ubuntu-18.04'
-  container: registry.mcsh.red/library/aarch64-linux-crossbuilder@sha256:07f8de01b974a22414c779bea2d33dcd69b2c371e0a8b81b98bc17484252b9cc
+  container: sigmaris/aarch64-linux-crossbuilder:latest
   steps:
   - checkout: none  #skip checking out the default repository resource
   - task: DownloadBuildArtifacts@0
