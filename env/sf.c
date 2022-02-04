@@ -295,11 +295,8 @@ static int env_sf_load(void)
 err_read:
 #ifndef CONFIG_DM_SPI_FLASH
 	spi_flash_free(env_flash);
-<<<<<<< HEAD
 #endif
 	env_flash = NULL;
-=======
->>>>>>> upstream/master
 out:
 	free(buf);
 
