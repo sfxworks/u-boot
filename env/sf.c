@@ -189,6 +189,8 @@ static int env_sf_load(void)
 
 #ifndef CONFIG_DM_SPI_FLASH
 	spi_flash_free(env_flash);
+#endif
+	env_flash = NULL;
 out:
 	free(tmp_env1);
 	free(tmp_env2);
